@@ -70,14 +70,19 @@ export default function Chat() {
           </div>
         ))}
       </div>
-      <input
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && send()}
-        placeholder="入力してEnter"
-        style={{ width: "80%" }}
-        disabled={loading}
-      />
+      <textarea
+  value={input}
+  onChange={(e) => setInput(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" && e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  }}
+  placeholder="Shift + Enter で送信"
+  style={{ width: "80%", height: "60px" }}
+  disabled={loading}
+/>
       <button onClick={send} disabled={loading}>
         送信
       </button>
