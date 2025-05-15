@@ -16,7 +16,7 @@ export default function Chat() {
   const send = async () => {
     if (!input.trim()) return;
 
-    const newMessages = [...messages, { from: "user", text: input }];
+    const newMessages = [...messages, { from: "user" as const, text: input }];
     setMessages(newMessages);
     setInput("");
     setLoading(true);
@@ -35,7 +35,7 @@ export default function Chat() {
 
       const data = await response.json();
 
-      setMessages((prev) => [...prev, { from: "bot", text: data.reply }]);
+     setMessages((prev) => [...prev, { from: "bot" as const, text: data.reply }]);
     } catch (err) {
       setMessages((prev) => [
         ...prev,
