@@ -1,37 +1,46 @@
-// pages/api/chat.ts
+import { NextApiRequest, NextApiResponse } from "next";
+import { Configuration, OpenAIApi } from "openai";
 
-import type { NextApiRequest, NextApiResponse } from 'next';
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).end();
+  if (req.method !== "POST") {
+    return res.status(405).end();
+  }
 
   const { history } = req.body;
 
-  const systemPrompt = {
-    role: 'system',
-    content:
-      'あなたは理不尽なクレーマーを演じる仮想顧客です。シチュエーションに沿って話し言葉で返答してください。',
-  };
+  // ✅ ここがポイント：システムメッセージを先頭に追加
+  const messagesWithSystem = [
+    {
+      role: "system",
+      content: `あなたはカスタマーハラスメント対応のロールプレイAIです。
+以下のルールを守ってください：
 
-  const messages = [systemPrompt, ...history];
+・理不尽なクレームをユーザーにぶつける。
+・5回目以降は【ヒント】という見出しを含め、ユーザーに助言する。
+・10回目までに「納得しました」「仕方ないですね」などのセリフで会話を終えるようにしてください。
+・出力のフォーマットは自然な日本語会話で。
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
+ヒントは「【ヒント】〜」のように記載してください。`,
     },
-    body: JSON.stringify({
-      model: 'gpt-3.5-turbo',
-      messages,
-    }),
-  });
+    ...history,
+  ];
 
-  const data = await response.json();
+  try {
+    const chatCompletion = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: messagesWithSystem,
+    });
 
-  if (data.error) {
-    return res.status(500).json({ reply: `APIエラー: ${data.error.message}` });
+    const reply = chatCompletion.data.choices[0].message?.content || "応答が得られませんでした。";
+
+    res.status(200).json({ reply });
+  } catch (error: any) {
+    console.error("OpenAI API error:", error);
+    res.status(500).json({ reply: "APIエラーが発生しました。" });
   }
-
-  res.status(200).json({ reply: data.choices[0].message.content });
 }
